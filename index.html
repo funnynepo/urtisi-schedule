@@ -187,6 +187,96 @@
       color: var(--text-secondary);
     }
 
+    /* Main Page Week Switcher */
+    .week-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .week-step-btn {
+      height: 38px;
+      padding: 0 11px;
+      border-radius: 11px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      flex-shrink: 0;
+      transition: transform 0.12s ease, background 0.15s ease;
+    }
+    .week-step-btn:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+    .week-step-btn:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+    }
+
+    .week-center-btn {
+      flex: 1;
+      height: 38px;
+      padding: 0 11px;
+      border-radius: 11px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      min-width: 0;
+      transition: border-color 0.15s ease, transform 0.12s ease;
+    }
+    .week-center-btn:active {
+      transform: scale(0.98);
+    }
+    .week-center-btn.open {
+      border-color: var(--accent-blue);
+    }
+
+    .week-center-dates {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .week-idx-pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 5px;
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .main-week-dropdown {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 13px;
+      padding: 8px;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-card);
+    }
+    .main-week-dropdown.open {
+      display: flex;
+    }
+
     .filter-bar {
       display: flex;
       align-items: center;
@@ -840,6 +930,22 @@
         <span class="group-title" id="groupLabel">Группа ПЕ-52б</span>
         <span class="group-period" id="periodLabel">(с 23 ноября по 28 ноября)</span>
       </div>
+
+      <!-- Week Switcher Bar on Main Page -->
+      <div class="week-bar" id="mainWeekBar">
+        <button class="week-step-btn" id="mainPrevWeekBtn" aria-label="Предыдущая неделя">‹ Пред</button>
+        <button class="week-center-btn" id="mainWeekSelectBtn" aria-expanded="false" aria-label="Выбрать неделю">
+          <span class="week-center-dates" id="mainWeekDates">23.11 - 28.11</span>
+          <span style="display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;">
+            <span class="current-pill" id="mainCurrBadge">ТЕКУЩАЯ</span>
+            <span class="week-idx-pill" id="mainWeekIdxPill" style="display: none;">2 / 6</span>
+            <span id="mainWeekChevron" style="color: var(--text-muted); font-size: 12px;">▾</span>
+          </span>
+        </button>
+        <button class="week-step-btn" id="mainNextWeekBtn" aria-label="Следующая неделя">След ›</button>
+      </div>
+      <div class="main-week-dropdown" id="mainWeekDropdown"></div>
+
       <div class="filter-bar">
         <button class="toggle-pill active" id="hidePastBtn">
           <span class="check-box">✓</span>
@@ -1082,9 +1188,38 @@
       document.getElementById('drawerPeriodShort').textContent = week.period_short;
       document.getElementById('lastUpdatedLabel').textContent = scheduleData.updated_at || 'только что';
 
+      // Main page week bar state
+      const isCurrWeek = selectedWeekIdx === currentWeekIdx;
+      document.getElementById('mainWeekDates').textContent = week.period_short;
+      document.getElementById('mainCurrBadge').style.display = isCurrWeek ? 'inline-block' : 'none';
+      const idxPill = document.getElementById('mainWeekIdxPill');
+      idxPill.style.display = isCurrWeek ? 'none' : 'inline-block';
+      idxPill.textContent = `${selectedWeekIdx + 1} / ${weeks.length}`;
+      document.getElementById('mainPrevWeekBtn').disabled = selectedWeekIdx <= 0;
+      document.getElementById('mainNextWeekBtn').disabled = selectedWeekIdx >= weeks.length - 1;
+
+      // Render main page dropdown list
+      const mainDropdown = document.getElementById('mainWeekDropdown');
+      mainDropdown.innerHTML = weeks.map((w, idx) => `
+        <div class="period-item ${idx === selectedWeekIdx ? 'selected' : ''}" data-widx="${idx}">
+          <span>${w.period_short}</span>
+          <span style="font-size: 11px; color: ${idx === currentWeekIdx ? 'var(--accent-green)' : 'var(--text-secondary)'}; font-weight: ${idx === currentWeekIdx ? '700' : '500'};">
+            ${idx === currentWeekIdx ? 'Текущая неделя' : w.period_label}
+          </span>
+        </div>
+      `).join('');
+      mainDropdown.querySelectorAll('.period-item').forEach(el => {
+        el.addEventListener('click', () => {
+          selectedWeekIdx = Number(el.dataset.widx);
+          closeMainWeekDropdown();
+          triggerHaptic('light');
+          renderSchedule();
+        });
+      });
+
       // Current badge in drawer
       const currBadge = document.getElementById('currentWeekBadge');
-      currBadge.style.display = selectedWeekIdx === currentWeekIdx ? 'inline-block' : 'none';
+      currBadge.style.display = isCurrWeek ? 'inline-block' : 'none';
 
       // Prev / Next buttons state
       document.getElementById('prevWeekBtn').disabled = selectedWeekIdx <= 0;
@@ -1214,7 +1349,56 @@
     document.getElementById('closeMenuBtn').addEventListener('click', closeDrawer);
     drawerBackdrop.addEventListener('click', closeDrawer);
 
-    // Week navigation
+    // Main page week dropdown helpers
+    function closeMainWeekDropdown() {
+      const dd = document.getElementById('mainWeekDropdown');
+      const btn = document.getElementById('mainWeekSelectBtn');
+      const chev = document.getElementById('mainWeekChevron');
+      dd.classList.remove('open');
+      btn.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+      chev.textContent = '▾';
+    }
+
+    document.getElementById('mainWeekSelectBtn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dd = document.getElementById('mainWeekDropdown');
+      const btn = document.getElementById('mainWeekSelectBtn');
+      const chev = document.getElementById('mainWeekChevron');
+      const isOpen = dd.classList.toggle('open');
+      btn.classList.toggle('open', isOpen);
+      btn.setAttribute('aria-expanded', String(isOpen));
+      chev.textContent = isOpen ? '▴' : '▾';
+      triggerHaptic('light');
+    });
+
+    document.addEventListener('click', (e) => {
+      const bar = document.getElementById('mainWeekBar');
+      const dd = document.getElementById('mainWeekDropdown');
+      if (dd.classList.contains('open') && !bar.contains(e.target) && !dd.contains(e.target)) {
+        closeMainWeekDropdown();
+      }
+    });
+
+    document.getElementById('mainPrevWeekBtn').addEventListener('click', () => {
+      if (selectedWeekIdx > 0) {
+        selectedWeekIdx--;
+        closeMainWeekDropdown();
+        triggerHaptic('light');
+        renderSchedule();
+      }
+    });
+
+    document.getElementById('mainNextWeekBtn').addEventListener('click', () => {
+      if (selectedWeekIdx < (scheduleData.weeks || []).length - 1) {
+        selectedWeekIdx++;
+        closeMainWeekDropdown();
+        triggerHaptic('light');
+        renderSchedule();
+      }
+    });
+
+    // Week navigation (drawer)
     document.getElementById('prevWeekBtn').addEventListener('click', () => {
       if (selectedWeekIdx > 0) {
         selectedWeekIdx--;
