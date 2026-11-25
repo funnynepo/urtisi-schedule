@@ -1717,9 +1717,8 @@
       `);
     });
 
-    // Обратная связь (баги / идеи / отзывы) — тихая фоновая отправка без перехода в личку и без токенов в коде
-    // Вставьте сюда URL веб-приложения Google Apps Script (вида https://script.google.com/macros/s/.../exec)
-    const FEEDBACK_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxhZgLdPQQTlq6IzXoVv_Wn-0ypT8wFQvPiXZkoQ3Bgx4FiEXHY5KokIOIhRQIU8GH4/exec";
+    // Обратная связь (баги / идеи / отзывы) — тихая фоновая отправка через Google Apps Script с проверкой ответа
+    const FEEDBACK_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwqoG9OAnXbnxvjPV5qQ46XaDo2DToC3x1bv2uqgqFkUICab0LXUmc5rRE4DaK4fNN-/exec";
 
     document.querySelectorAll('.fb-card').forEach(card => {
       card.addEventListener('click', () => {
@@ -1748,9 +1747,8 @@
           const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
 
           try {
-            await fetch(FEEDBACK_WEBHOOK_URL, {
+            const resp = await fetch(FEEDBACK_WEBHOOK_URL, {
               method: 'POST',
-              mode: 'no-cors',
               headers: { 'Content-Type': 'text/plain;charset=utf-8' },
               body: JSON.stringify({
                 type: kind,
@@ -1767,13 +1765,25 @@
               })
             });
 
+            const resText = (await resp.text()).trim();
+            if (resText !== 'OK') {
+              throw new Error(resText || 'UNKNOWN_RESPONSE');
+            }
+
             closeModal();
             triggerHaptic('success');
             showToast('Сообщение отправлено', 'Спасибо за обратную связь!');
           } catch (e) {
             sendBtn.disabled = false;
             sendBtn.textContent = 'Отправить';
-            showToast('Ошибка отправки', 'Проверьте подключение к интернету и попробуйте снова', true);
+            const msg = String(e && e.message ? e.message : '');
+            if (msg.includes('NO_CHAT_ID')) {
+              showToast('Не найден чат админа', 'Нажмите /start в боте обратной связи или впишите ADMIN_ID в скрипт', true);
+            } else if (msg.includes('TG_ERR')) {
+              showToast('Ошибка Telegram API', msg.replace('TG_ERR:', '').trim(), true);
+            } else {
+              showToast('Ошибка отправки', msg || 'Проверьте настройки развёртывания Google Apps Script', true);
+            }
           }
         });
       });
