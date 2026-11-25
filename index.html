@@ -402,6 +402,95 @@
       margin-bottom: 0;
     }
 
+    /* Active (ongoing) lesson highlight */
+    .lesson-card.is-now {
+      border-top-color: rgba(34, 197, 94, 0.55);
+      border-right-color: rgba(34, 197, 94, 0.55);
+      border-bottom-color: rgba(34, 197, 94, 0.55);
+      box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.25), 0 6px 22px rgba(34, 197, 94, 0.14);
+      background: linear-gradient(180deg, rgba(34, 197, 94, 0.09) 0%, var(--bg-card) 60%);
+    }
+    .lesson-card.is-now:not([class*="type-"]) {
+      border-left: 3px solid var(--accent-green);
+    }
+    html.light .lesson-card.is-now {
+      border-top-color: rgba(22, 163, 74, 0.55);
+      border-right-color: rgba(22, 163, 74, 0.55);
+      border-bottom-color: rgba(22, 163, 74, 0.55);
+      box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.22), 0 6px 20px rgba(22, 163, 74, 0.12);
+      background: linear-gradient(180deg, rgba(22, 163, 74, 0.08) 0%, var(--bg-card) 60%);
+    }
+
+    .live-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--accent-green-bg);
+      color: var(--accent-green);
+      border: 1px solid rgba(34, 197, 94, 0.35);
+      letter-spacing: 0.1px;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      animation: livePulse 1.8s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes livePulse {
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+      }
+      70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+      }
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+      }
+    }
+
+    .live-progress-wrap {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .live-progress-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-green);
+      margin-bottom: 5px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .live-progress-track {
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--bg-elevated);
+      overflow: hidden;
+    }
+
+    .live-progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #16a34a, #22c55e);
+      transition: width 0.5s ease;
+    }
+
     .lesson-top {
       display: flex;
       align-items: center;
@@ -1205,6 +1294,24 @@
       return `${y}-${m}-${d}`;
     }
 
+    function getLessonLiveStatus(dayDate, timeStr) {
+      if (dayDate !== getTodayISO()) return { active: false };
+      const m = String(timeStr || '').match(/(\d{1,2}):(\d{2})\s*[—–-]\s*(\d{1,2}):(\d{2})/);
+      if (!m) return { active: false };
+      const startSec = parseInt(m[1], 10) * 3600 + parseInt(m[2], 10) * 60;
+      const endSec = parseInt(m[3], 10) * 3600 + parseInt(m[4], 10) * 60;
+      const now = new Date();
+      const nowSec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+      if (nowSec >= startSec && nowSec < endSec) {
+        const totalSec = Math.max(1, endSec - startSec);
+        const elapsedSec = nowSec - startSec;
+        const remainingMin = Math.max(1, Math.ceil((endSec - nowSec) / 60));
+        const progressPct = Math.min(100, Math.max(0, (elapsedSec / totalSec) * 100)).toFixed(1);
+        return { active: true, remainingMin, progressPct };
+      }
+      return { active: false };
+    }
+
     function detectCurrentWeekIndex() {
       const today = getTodayISO();
       const weeks = scheduleData.weeks || [];
@@ -1336,11 +1443,15 @@
           const typeClass = isExam ? 'exam' : (isLab ? 'lab' : (isLecture ? 'lecture' : (isPractice ? 'practice' : '')));
           const cardTypeClass = typeClass ? `type-${typeClass}` : '';
           const isRemote = /дист/i.test(l.room || '');
+          const live = getLessonLiveStatus(day.date, l.time);
 
           return `
-            <article class="lesson-card ${cardTypeClass}">
+            <article class="lesson-card ${cardTypeClass} ${live.active ? 'is-now' : ''}">
               <div class="lesson-top">
-                <span class="pair-num">${l.pair} пара</span>
+                <div style="display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <span class="pair-num">${l.pair} пара</span>
+                  ${live.active ? `<span class="live-pill"><span class="live-dot"></span>Идёт текущая пара</span>` : ''}
+                </div>
                 <span class="pair-time">${l.time}</span>
               </div>
               <div class="subject-name">${l.subject}</div>
@@ -1353,6 +1464,17 @@
                 <span>Кабинет:</span>
                 <span class="room-badge ${isRemote ? 'remote' : ''}">${l.room || '—'}</span>
               </div>
+              ${live.active ? `
+                <div class="live-progress-wrap">
+                  <div class="live-progress-meta">
+                    <span>Сейчас идёт занятие</span>
+                    <span>осталось ${live.remainingMin} мин</span>
+                  </div>
+                  <div class="live-progress-track">
+                    <div class="live-progress-fill" style="width: ${live.progressPct}%"></div>
+                  </div>
+                </div>
+              ` : ''}
             </article>
           `;
         }).join('');
@@ -1623,6 +1745,28 @@
           Период: 23.11.2026 — 30.12.2026
         </p>
       `);
+    });
+
+    // Live clock watcher: automatically highlights/updates current lesson when time changes
+    function getMinuteStamp() {
+      const d = new Date();
+      return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}-${d.getMinutes()}`;
+    }
+    let lastMinuteStamp = getMinuteStamp();
+
+    setInterval(() => {
+      const currentStamp = getMinuteStamp();
+      if (currentStamp !== lastMinuteStamp) {
+        lastMinuteStamp = currentStamp;
+        renderSchedule();
+      }
+    }, 10000);
+
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        lastMinuteStamp = getMinuteStamp();
+        renderSchedule();
+      }
     });
 
     // Init
