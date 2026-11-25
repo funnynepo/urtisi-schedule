@@ -1045,6 +1045,17 @@
       font-size: 12px;
       color: #bbf7d0;
     }
+    .toast.error {
+      background: #3b141c;
+      border-color: rgba(244, 63, 94, 0.5);
+      color: #ffe4e6;
+    }
+    .toast.error .toast-title {
+      color: #fb7185;
+    }
+    .toast.error .toast-sub {
+      color: #fecdd3;
+    }
   </style>
 </head>
 <body>
@@ -1241,7 +1252,7 @@
 
   <!-- Toast Notification -->
   <div class="toast" id="toast">
-    <span style="font-size: 18px;">✅</span>
+    <span id="toastIcon" style="font-size: 18px;">✅</span>
     <div>
       <div class="toast-title" id="toastTitle">Расписание обновлено</div>
       <div class="toast-sub" id="toastSub">Расписание успешно загружено</div>
@@ -1277,13 +1288,15 @@
       } catch (e) {}
     }
 
-    function showToast(title, sub) {
+    function showToast(title, sub, isError = false) {
       const toast = document.getElementById('toast');
+      document.getElementById('toastIcon').textContent = isError ? '⚠️' : '✅';
       document.getElementById('toastTitle').textContent = title;
       document.getElementById('toastSub').textContent = sub;
+      toast.classList.toggle('error', Boolean(isError));
       toast.classList.add('show');
       clearTimeout(window.__toastTimer);
-      window.__toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+      window.__toastTimer = setTimeout(() => toast.classList.remove('show'), isError ? 4200 : 2800);
     }
 
     function getTodayISO() {
@@ -1704,25 +1717,109 @@
       `);
     });
 
+    // Настройки бота для приёма обратной связи (отзывы / баги / идеи)
+    const FEEDBACK_BOT_TOKEN = "9256082780:AAGtSrGFXttv9FNv5PUaI5GQ8kwGOtuZsx0";
+    // Вставьте сюда ваш личный числовой ID от @userinfobot (не ID бота 9256082780)
+    const ADMIN_CHAT_ID = "";
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    async function resolveAdminChatId() {
+      const botId = FEEDBACK_BOT_TOKEN.split(':')[0];
+      const explicitId = String(ADMIN_CHAT_ID || '').trim();
+      if (explicitId && explicitId !== botId) {
+        return explicitId;
+      }
+      const cachedId = localStorage.getItem('urtisi_admin_chat_id');
+      if (cachedId && cachedId !== botId) {
+        return cachedId;
+      }
+      // Автопоиск вашего chat_id из последнего сообщения /start этому боту
+      const updRes = await fetch(`https://api.telegram.org/bot${FEEDBACK_BOT_TOKEN}/getUpdates?limit=20`);
+      const updData = await updRes.json();
+      if (updData && updData.ok && Array.isArray(updData.result)) {
+        for (let i = updData.result.length - 1; i >= 0; i--) {
+          const msg = updData.result[i].message || updData.result[i].edited_message;
+          if (msg && msg.chat && !msg.chat.is_bot && String(msg.chat.id) !== botId) {
+            const foundId = String(msg.chat.id);
+            localStorage.setItem('urtisi_admin_chat_id', foundId);
+            return foundId;
+          }
+        }
+      }
+      return "";
+    }
+
     document.querySelectorAll('.fb-card').forEach(card => {
       card.addEventListener('click', () => {
         const kind = card.dataset.fb;
+        const icon = kind.includes('баг') ? '🐞' : (kind.includes('иде') ? '💡' : '⭐');
         openModal(kind, `
-          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 0;">Опишите подробнее — сообщение будет отправлено администратору бота.</p>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 0;">Опишите подробнее — сообщение придёт администратору в Telegram.</p>
           <textarea class="fb-textarea" id="fbInput" placeholder="Введите текст сообщения..."></textarea>
           <button class="btn-full-blue" id="sendFbBtn">Отправить</button>
         `);
-        document.getElementById('sendFbBtn').addEventListener('click', () => {
+        document.getElementById('sendFbBtn').addEventListener('click', async () => {
           const val = document.getElementById('fbInput').value.trim();
           if (!val) return;
-          if (tg && tg.sendData) {
-            try {
-              tg.sendData(JSON.stringify({ type: kind, text: val }));
-            } catch (e) {}
+          const sendBtn = document.getElementById('sendFbBtn');
+          sendBtn.disabled = true;
+          sendBtn.textContent = 'Отправка...';
+
+          try {
+            const targetChatId = await resolveAdminChatId();
+            if (!targetChatId) {
+              throw new Error('NO_CHAT_ID');
+            }
+
+            const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
+            const senderName = tgUser
+              ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ')
+              : 'Гость (браузер)';
+            const senderUsername = tgUser && tgUser.username ? `@${tgUser.username}` : 'без username';
+            const senderId = tgUser && tgUser.id ? tgUser.id : '—';
+            const currentWeek = (scheduleData.weeks || [])[selectedWeekIdx];
+            const weekLabel = currentWeek ? currentWeek.period_short : '—';
+
+            const messageText = [
+              `${icon} <b>${escapeHtml(kind)}</b>`,
+              `📚 Группа: <b>${escapeHtml(scheduleData.group)}</b> · Неделя: <b>${escapeHtml(weekLabel)}</b>`,
+              `👤 От: ${escapeHtml(senderName)} (${escapeHtml(senderUsername)}, ID: <code>${escapeHtml(senderId)}</code>)`,
+              ``,
+              escapeHtml(val)
+            ].join('\n');
+
+            const resp = await fetch(`https://api.telegram.org/bot${FEEDBACK_BOT_TOKEN}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: targetChatId,
+                text: messageText,
+                parse_mode: 'HTML'
+              })
+            });
+            const data = await resp.json();
+            if (!data.ok) {
+              throw new Error(data.description || 'Telegram API error');
+            }
+
+            closeModal();
+            triggerHaptic('success');
+            showToast('Сообщение отправлено', 'Спасибо за обратную связь!');
+          } catch (err) {
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Отправить';
+            if (err && err.message === 'NO_CHAT_ID') {
+              showToast('Нужен ID получателя', 'Напишите /start боту обратной связи или укажите ADMIN_CHAT_ID', true);
+            } else {
+              showToast('Ошибка отправки', 'Проверьте интернет и что в боте нажата кнопка /start', true);
+            }
           }
-          closeModal();
-          triggerHaptic('success');
-          showToast('Сообщение отправлено', 'Спасибо за обратную связь!');
         });
       });
     });
