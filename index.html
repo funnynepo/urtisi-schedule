@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Расписание — УрТИСИ (ПЕ-52б)</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0b0d10;
+      --bg-secondary: #14171c;
+      --bg-card: #181c22;
+      --bg-elevated: #20252d;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent-green: #22c55e;
+      --accent-green-bg: rgba(34, 197, 94, 0.16);
+      --accent-green-solid: #1ea34d;
+      --accent-blue: #3b82f6;
+      --accent-blue-hover: #2563eb;
+      --accent-amber: #f59e0b;
+      --accent-amber-bg: rgba(245, 158, 11, 0.16);
+      --accent-rose: #f43f5e;
+      --accent-rose-bg: rgba(244, 63, 94, 0.16);
+      --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.35);
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    html.light {
+      --bg-primary: #f3f5f8;
+      --bg-secondary: #ffffff;
+      --bg-card: #ffffff;
+      --bg-elevated: #eef1f6;
+      --border-color: rgba(15, 23, 42, 0.09);
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --accent-green: #16a34a;
+      --accent-green-bg: rgba(22, 163, 74, 0.12);
+      --accent-green-solid: #16a34a;
+      --accent-blue: #2563eb;
+      --accent-blue-hover: #1d4ed8;
+      --accent-amber: #d97706;
+      --accent-amber-bg: rgba(217, 119, 6, 0.12);
+      --accent-rose: #e11d48;
+      --accent-rose-bg: rgba(225, 29, 72, 0.12);
+      --shadow-card: 0 2px 12px rgba(15, 23, 42, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Inter, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.4;
+      overflow-x: hidden;
+      padding-bottom: calc(28px + env(safe-area-inset-bottom));
+    }
+
+    /* Top Navigation Bar */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(11, 13, 16, 0.88);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border-color);
+    }
+    html.light .topbar {
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: -0.5px;
+      box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
+    }
+
+    .brand-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+      margin-top: -2px;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      background: var(--accent-green-bg);
+      color: var(--accent-green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(34, 197, 94, 0.25);
+    }
+
+    .menu-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--accent-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.15s ease;
+    }
+    .menu-btn:active {
+      transform: scale(0.94);
+    }
+
+    /* Container */
+    .container {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 14px 14px 20px;
+    }
+
+    /* Group Header & Controls */
+    .group-header {
+      margin-bottom: 14px;
+    }
+
+    .group-title-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .group-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .group-period {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .toggle-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 12px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      transition: all 0.18s ease;
+      user-select: none;
+    }
+
+    .toggle-pill.active {
+      background: var(--accent-green-bg);
+      border-color: rgba(34, 197, 94, 0.35);
+      color: var(--accent-green);
+    }
+
+    .check-box {
+      width: 16px;
+      height: 16px;
+      border-radius: 5px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      font-size: 11px;
+      color: transparent;
+      transition: all 0.15s ease;
+    }
+
+    .toggle-pill.active .check-box {
+      background: var(--accent-green);
+      border-color: var(--accent-green);
+      color: #fff;
+    }
+
+    .subgroup-tabs {
+      display: inline-flex;
+      background: var(--bg-card);
+      padding: 3px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+    }
+
+    .sg-tab {
+      padding: 5px 10px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .sg-tab.active {
+      background: var(--accent-blue);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+    }
+
+    /* Day Section Card */
+    .day-section {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-card);
+    }
+
+    .day-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .day-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .today-badge {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(59, 130, 246, 0.16);
+      color: var(--accent-blue);
+    }
+
+    /* Lesson Card */
+    .lesson-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 12px 13px;
+      margin-bottom: 10px;
+      transition: transform 0.12s ease;
+    }
+    .lesson-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .lesson-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .pair-num {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    .pair-time {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .subject-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 7px;
+      line-height: 1.35;
+    }
+
+    .tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .tag-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+
+    .tag-pill.exam {
+      background: var(--accent-rose-bg);
+      color: var(--accent-rose);
+      border-color: rgba(244, 63, 94, 0.25);
+    }
+
+    .tag-pill.lecture {
+      background: rgba(59, 130, 246, 0.14);
+      color: var(--accent-blue);
+      border-color: rgba(59, 130, 246, 0.25);
+    }
+
+    .tag-pill.subgroup {
+      background: var(--accent-amber-bg);
+      color: var(--accent-amber);
+      border-color: rgba(245, 158, 11, 0.25);
+    }
+
+    .teacher-line {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .room-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .room-badge {
+      display: inline-block;
+      padding: 3px 9px;
+      border-radius: 7px;
+      background: var(--accent-green-solid);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .room-badge.remote {
+      background: #2563eb;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 36px 20px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      color: var(--text-secondary);
+    }
+
+    .empty-state h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+      color: var(--text-primary);
+    }
+
+    .empty-state p {
+      margin: 0 0 14px;
+      font-size: 13px;
+    }
+
+    .btn-secondary {
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Slide-Over Drawer Menu */
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+    .drawer-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: min(370px, 92vw);
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border-color);
+      z-index: 60;
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+      overflow-y: auto;
+      padding: 16px 16px 32px;
+    }
+    .drawer-panel.open {
+      transform: translateX(0);
+    }
+
+    .drawer-close-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 6px;
+    }
+
+    .close-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.7px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 18px 0 8px;
+    }
+
+    .section-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin: -4px 0 12px;
+    }
+
+    .menu-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 13px;
+      margin-bottom: 10px;
+    }
+
+    .menu-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .menu-card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .menu-card-sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .menu-icon-box {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: rgba(59, 130, 246, 0.14);
+      color: var(--accent-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .period-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+    }
+
+    .current-pill {
+      background: var(--accent-green-bg);
+      color: var(--accent-green);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 5px;
+      letter-spacing: 0.3px;
+    }
+
+    .week-nav-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr 1fr;
+      gap: 6px;
+    }
+
+    .nav-btn {
+      padding: 8px 6px;
+      border-radius: 9px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-elevated);
+      color: var(--text-primary);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+    .nav-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .nav-btn.primary {
+      background: var(--accent-blue);
+      border-color: var(--accent-blue);
+      color: #fff;
+    }
+
+    .clickable-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .periods-list {
+      display: none;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border-color);
+      flex-direction: column;
+      gap: 6px;
+    }
+    .periods-list.open {
+      display: flex;
+    }
+
+    .period-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 9px;
+      background: var(--bg-elevated);
+      border: 1px solid transparent;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      cursor: pointer;
+    }
+    .period-item.selected {
+      border-color: var(--accent-blue);
+      background: rgba(59, 130, 246, 0.14);
+      color: var(--accent-blue);
+    }
+
+    .btn-full-blue {
+      width: 100%;
+      padding: 11px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent-blue);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+    .btn-full-blue:active {
+      transform: scale(0.98);
+    }
+
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 46px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: var(--bg-elevated);
+      border: 1px solid var(--border-color);
+      transition: .25s;
+      border-radius: 26px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 2px;
+      bottom: 2px;
+      background-color: white;
+      transition: .25s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: var(--accent-blue);
+      border-color: var(--accent-blue);
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Feedback Tinted Cards */
+    .fb-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 13px;
+      border-radius: 13px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: transform 0.12s ease;
+    }
+    .fb-card:active {
+      transform: scale(0.98);
+    }
+    .fb-bug {
+      background: rgba(244, 63, 94, 0.11);
+      border-color: rgba(244, 63, 94, 0.22);
+    }
+    .fb-idea {
+      background: rgba(245, 158, 11, 0.11);
+      border-color: rgba(245, 158, 11, 0.22);
+    }
+    .fb-review {
+      background: rgba(59, 130, 246, 0.11);
+      border-color: rgba(59, 130, 246, 0.22);
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(4px);
+      z-index: 80;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.open {
+      display: flex;
+    }
+    .modal-box {
+      width: 100%;
+      max-width: 420px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .bell-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-radius: 9px;
+      background: var(--bg-card);
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    .fb-textarea {
+      width: 100%;
+      min-height: 96px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      padding: 10px 12px;
+      font-family: inherit;
+      font-size: 13px;
+      resize: vertical;
+      margin-bottom: 10px;
+    }
+
+    /* Bottom Toast */
+    .toast {
+      position: fixed;
+      left: 14px;
+      right: 14px;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      max-width: 530px;
+      margin: 0 auto;
+      background: #143623;
+      border: 1px solid rgba(34, 197, 94, 0.45);
+      color: #dcfce7;
+      border-radius: 12px;
+      padding: 11px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 90;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+      transform: translateY(130%);
+      opacity: 0;
+      transition: all 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .toast-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #4ade80;
+    }
+    .toast-sub {
+      font-size: 12px;
+      color: #bbf7d0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">УР</div>
+      <div>
+        <div class="brand-title" id="instTitle">УрТИСИ</div>
+        <div class="brand-sub">СибГУТИ · Екатеринбург</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <div class="status-badge" title="Расписание сохранено офлайн">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <button class="menu-btn" id="openMenuBtn" aria-label="Меню">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="17" x2="20" y2="17"></line></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <div class="group-header">
+      <div class="group-title-row">
+        <span class="group-title" id="groupLabel">Группа ПЕ-52б</span>
+        <span class="group-period" id="periodLabel">(с 23 ноября по 28 ноября)</span>
+      </div>
+      <div class="filter-bar">
+        <button class="toggle-pill active" id="hidePastBtn">
+          <span class="check-box">✓</span>
+          <span>Спрятать прошедшие дни</span>
+        </button>
+
+        <div class="subgroup-tabs" role="tablist" aria-label="Выбор подгруппы">
+          <button class="sg-tab active" data-sg="all">Все</button>
+          <button class="sg-tab" data-sg="1">1 п/гр</button>
+          <button class="sg-tab" data-sg="2">2 п/гр</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="scheduleContainer"></div>
+  </main>
+
+  <!-- Drawer Backdrop -->
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+  <!-- Slide-Over Drawer Menu -->
+  <aside class="drawer-panel" id="drawerPanel" aria-label="Настройки и навигация">
+    <div class="drawer-close-row">
+      <button class="close-btn" id="closeMenuBtn" aria-label="Закрыть">✕</button>
+    </div>
+
+    <div class="section-label">БЫСТРЫЕ ДЕЙСТВИЯ</div>
+    <div class="section-desc">Переключайте неделю, уточняйте расписание звонков и управляйте темой приложения.</div>
+
+    <!-- Week Selector Card -->
+    <div class="menu-card">
+      <div class="menu-card-header">
+        <div>
+          <div class="menu-card-title">Выбор недели</div>
+          <div class="menu-card-sub">Перейдите к расписанию другой недели.</div>
+        </div>
+        <div class="menu-icon-box">📅</div>
+      </div>
+      <div class="period-indicator">
+        <span>Период: <strong id="drawerPeriodShort">23.11 - 28.11</strong></span>
+        <span class="current-pill" id="currentWeekBadge">ТЕКУЩАЯ</span>
+      </div>
+      <div class="week-nav-grid">
+        <button class="nav-btn" id="prevWeekBtn">‹ Пред</button>
+        <button class="nav-btn primary" id="currWeekBtn">📅 Текущая</button>
+        <button class="nav-btn" id="nextWeekBtn">След ›</button>
+      </div>
+    </div>
+
+    <!-- Bells Schedule Card -->
+    <div class="menu-card clickable-row" id="openBellsBtn">
+      <div>
+        <div class="menu-card-title">Расписание звонков</div>
+        <div class="menu-card-sub">Узнайте время начала пар и перерывов.</div>
+      </div>
+      <div class="menu-icon-box">🕒</div>
+    </div>
+
+    <!-- Available Periods Accordion -->
+    <div class="menu-card">
+      <div class="clickable-row" id="togglePeriodsBtn">
+        <div>
+          <div class="menu-card-title">Доступные периоды</div>
+          <div class="menu-card-sub">Быстрый переход к сохранённым неделям расписания</div>
+        </div>
+        <span id="periodsChevron" style="color: var(--text-secondary); font-weight: 700;">⌄</span>
+      </div>
+      <div class="periods-list" id="periodsList"></div>
+    </div>
+
+    <!-- Schedule Update Section -->
+    <div class="section-label">ОБНОВЛЕНИЕ РАСПИСАНИЯ</div>
+    <div class="section-desc" id="lastUpdatedLabel">только что</div>
+    <div class="menu-card">
+      <div class="menu-card-title" style="margin-bottom: 4px;">Получить свежие данные</div>
+      <div class="menu-card-sub" style="margin-bottom: 12px;">Запустите обновление, если расписание устарело.</div>
+      <button class="btn-full-blue" id="refreshScheduleBtn">Обновить расписание</button>
+    </div>
+
+    <!-- Appearance Section -->
+    <div class="section-label">ОФОРМЛЕНИЕ</div>
+    <div class="menu-card clickable-row">
+      <div>
+        <div class="menu-card-title">Сменить тему</div>
+        <div class="menu-card-sub">Переключайте светлую и тёмную тему.</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="themeToggle" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="menu-card clickable-row">
+      <div>
+        <div class="menu-card-title">Тактильная отдача</div>
+        <div class="menu-card-sub">Добавляет лёгкую вибрацию при ключевых действиях.</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="hapticToggle" checked />
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- Feedback Section -->
+    <div class="section-label">ОБРАТНАЯ СВЯЗЬ</div>
+    <div class="fb-card fb-bug" data-fb="Сообщить о баге">
+      <span style="font-size: 20px;">🐞</span>
+      <div>
+        <div class="menu-card-title" style="color: #fda4af;">Сообщить о баге</div>
+        <div class="menu-card-sub">Нашли ошибку? Помогите нам исправить её</div>
+      </div>
+    </div>
+
+    <div class="fb-card fb-idea" data-fb="Предложить идею">
+      <span style="font-size: 20px;">💡</span>
+      <div>
+        <div class="menu-card-title" style="color: #fcd34d;">Предложить идею</div>
+        <div class="menu-card-sub">Есть идея улучшения? Поделитесь с нами!</div>
+      </div>
+    </div>
+
+    <div class="fb-card fb-review" data-fb="Оставить отзыв">
+      <span style="font-size: 20px;">⭐</span>
+      <div>
+        <div class="menu-card-title" style="color: #93c5fd;">Оставить отзыв</div>
+        <div class="menu-card-sub">Расскажите о вашем опыте использования</div>
+      </div>
+    </div>
+
+    <!-- Support Section -->
+    <div class="section-label">ПОДДЕРЖКА</div>
+    <div class="menu-card" style="text-align: center;">
+      <button class="btn-secondary" style="width: 100%; margin-bottom: 10px;" id="faqBtn">❓ FAQ и помощь</button>
+      <div style="font-size: 12px; color: var(--accent-blue); cursor: pointer;" id="aboutBtn">О приложении</div>
+    </div>
+  </aside>
+
+  <!-- Modal -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle">Расписание звонков</div>
+        <button class="close-btn" id="closeModalBtn">✕</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast">
+    <span style="font-size: 18px;">✅</span>
+    <div>
+      <div class="toast-title" id="toastTitle">Расписание обновлено</div>
+      <div class="toast-sub" id="toastSub">Расписание успешно загружено</div>
+    </div>
+  </div>
+
+  <script>
+    const EMBEDDED_SCHEDULE = {"institute": "УрТИСИ СибГУТИ", "group": "ПЕ-52б", "updated_at": "25.11.2026, 16:20", "bells": {"weekdays": [{"pair": 1, "time": "08:30 — 10:00"}, {"pair": 2, "time": "10:15 — 11:45"}, {"pair": 3, "time": "12:00 — 13:30"}, {"pair": 4, "time": "14:15 — 15:45"}, {"pair": 5, "time": "16:00 — 17:30"}, {"pair": 6, "time": "17:40 — 19:05"}, {"pair": 7, "time": "19:15 — 20:40"}], "saturday": [{"pair": 1, "time": "08:30 — 10:00"}, {"pair": 2, "time": "10:15 — 11:45"}, {"pair": 3, "time": "12:00 — 13:30"}, {"pair": 4, "time": "13:45 — 15:15"}, {"pair": 5, "time": "15:30 — 17:00"}, {"pair": 6, "time": "17:40 — 19:05"}]}, "weeks": [{"id": "2026-11-23", "start_date": "2026-11-23", "end_date": "2026-11-28", "period_short": "23.11 - 28.11", "period_label": "с 23 ноября по 28 ноября", "days": [{"date": "2026-11-23", "day_name": "Понедельник", "date_label": "Понедельник, 23 ноября", "short_date": "23.11", "lessons": [{"pair": 3, "time": "12:00 — 13:30", "subject": "Математическая логика и теория алгоритмов", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Теория вероятностей и математическая статистика", "type": "практика", "subgroup": null, "teacher": "профессор Просвиряков Е.Ю.", "room": "414 УК1"}, {"pair": 5, "time": "16:00 — 17:30", "subject": "Теория вероятностей и математическая статистика", "type": "практика", "subgroup": null, "teacher": "профессор Просвиряков Е.Ю.", "room": "414 УК1"}]}, {"date": "2026-11-24", "day_name": "Вторник", "date_label": "Вторник, 24 ноября", "short_date": "24.11", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Web-технологии", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "дист. об"}, {"pair": 1, "time": "08:30 — 10:00", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Web-технологии", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "303 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Математическая логика и теория алгоритмов", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "414 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Математическая логика и теория алгоритмов", "type": "лекция", "subgroup": null, "teacher": "доцент Куанышев В.Т.", "room": "402 УК1"}]}, {"date": "2026-11-25", "day_name": "Среда", "date_label": "Среда, 25 ноября", "short_date": "25.11", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Объектно-ориентированное программирование", "type": "практика", "subgroup": 1, "teacher": "преподаватель Кириленко А.А.", "room": "301 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Элективные дисциплины по физической культуре и спорту", "type": "практика", "subgroup": null, "teacher": "преподаватель Фончукова А.С.", "room": "С/З"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Теория информации", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Объектно-ориентированное программирование", "type": "практика", "subgroup": 2, "teacher": "преподаватель Кириленко А.А.", "room": "314 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Математическая логика и теория алгоритмов", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}]}, {"date": "2026-11-26", "day_name": "Четверг", "date_label": "Четверг, 26 ноября", "short_date": "26.11", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Теория информации", "type": "лаб. раб.", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "307 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Структуры и алгоритмы обработки данных", "type": "лекция", "subgroup": null, "teacher": "ст. преподаватель Белкина А.В.", "room": "213 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Теория информации", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}]}, {"date": "2026-11-27", "day_name": "Пятница", "date_label": "Пятница, 27 ноября", "short_date": "27.11", "lessons": [{"pair": 2, "time": "10:15 — 11:45", "subject": "Математическая логика и теория алгоритмов", "type": "лекция", "subgroup": null, "teacher": "доцент Куанышев В.Т.", "room": "414 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Математическая логика и теория алгоритмов", "type": "лекция", "subgroup": null, "teacher": "доцент Куанышев В.Т.", "room": "414 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Элективные дисциплины по физической культуре и спорту", "type": "практика", "subgroup": null, "teacher": "преподаватель Фончукова А.С.", "room": "С/З"}]}, {"date": "2026-11-28", "day_name": "Суббота", "date_label": "Суббота, 28 ноября", "short_date": "28.11", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 5, "time": "15:30 — 17:00", "subject": "Тестирование программного обеспечения", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Тупицын К.М.", "room": "дист. об"}, {"pair": 6, "time": "17:40 — 19:05", "subject": "Тестирование программного обеспечения", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Тупицын К.М.", "room": "дист. об"}]}]}, {"id": "2026-11-30", "start_date": "2026-11-30", "end_date": "2026-12-05", "period_short": "30.11 - 05.12", "period_label": "с 30 ноября по 5 декабря", "days": [{"date": "2026-11-30", "day_name": "Понедельник", "date_label": "Понедельник, 30 ноября", "short_date": "30.11", "lessons": [{"pair": 3, "time": "12:00 — 13:30", "subject": "Математическая логика и теория алгоритмов", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Теория вероятностей и математическая статистика", "type": "практика", "subgroup": null, "teacher": "профессор Просвиряков Е.Ю.", "room": "414 УК1"}, {"pair": 5, "time": "16:00 — 17:30", "subject": "Теория вероятностей и математическая статистика", "type": "практика", "subgroup": null, "teacher": "профессор Просвиряков Е.Ю.", "room": "414 УК1"}]}, {"date": "2026-12-01", "day_name": "Вторник", "date_label": "Вторник, 1 декабря", "short_date": "01.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Web-технологии", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "306 УК1"}, {"pair": 1, "time": "08:30 — 10:00", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Web-технологии", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "303 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Математическая логика и теория алгоритмов", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "414 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Математическая логика и теория алгоритмов", "type": "лекция", "subgroup": null, "teacher": "доцент Куанышев В.Т.", "room": "402 УК1"}]}, {"date": "2026-12-02", "day_name": "Среда", "date_label": "Среда, 2 декабря", "short_date": "02.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Объектно-ориентированное программирование", "type": "практика", "subgroup": 1, "teacher": "преподаватель Кириленко А.А.", "room": "301 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Элективные дисциплины по физической культуре и спорту", "type": "практика", "subgroup": null, "teacher": "преподаватель Фончукова А.С.", "room": "С/З"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Теория информации", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Объектно-ориентированное программирование", "type": "практика", "subgroup": 2, "teacher": "преподаватель Кириленко А.А.", "room": "314 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Математическая логика и теория алгоритмов", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}]}, {"date": "2026-12-03", "day_name": "Четверг", "date_label": "Четверг, 3 декабря", "short_date": "03.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Структуры и алгоритмы обработки данных", "type": "лекция", "subgroup": null, "teacher": "ст. преподаватель Белкина А.В.", "room": "307 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Математическая логика и теория алгоритмов", "type": "лекция", "subgroup": null, "teacher": "доцент Куанышев В.Т.", "room": "414 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Математика", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}]}, {"date": "2026-12-04", "day_name": "Пятница", "date_label": "Пятница, 4 декабря", "short_date": "04.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Математическая логика и теория алгоритмов", "type": "лекция", "subgroup": null, "teacher": "доцент Куанышев В.Т.", "room": "414 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Математическая логика и теория алгоритмов", "type": "лекция", "subgroup": null, "teacher": "доцент Куанышев В.Т.", "room": "414 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Математическая логика и теория алгоритмов", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Элективные дисциплины по физической культуре и спорту", "type": "практика", "subgroup": null, "teacher": "преподаватель Фончукова А.С.", "room": "С/З"}]}, {"date": "2026-12-05", "day_name": "Суббота", "date_label": "Суббота, 5 декабря", "short_date": "05.12", "lessons": []}]}, {"id": "2026-12-07", "start_date": "2026-12-07", "end_date": "2026-12-12", "period_short": "07.12 - 12.12", "period_label": "с 7 декабря по 12 декабря", "days": [{"date": "2026-12-07", "day_name": "Понедельник", "date_label": "Понедельник, 7 декабря", "short_date": "07.12", "lessons": [{"pair": 3, "time": "12:00 — 13:30", "subject": "Математическая логика и теория алгоритмов", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Теория вероятностей и математическая статистика", "type": "Зачёт", "subgroup": null, "teacher": "профессор Просвиряков Е.Ю.", "room": "414 УК1"}, {"pair": 5, "time": "16:00 — 17:30", "subject": "Теория вероятностей и математическая статистика", "type": "Зачёт", "subgroup": null, "teacher": "профессор Просвиряков Е.Ю.", "room": "414 УК1"}]}, {"date": "2026-12-08", "day_name": "Вторник", "date_label": "Вторник, 8 декабря", "short_date": "08.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Web-технологии", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "306 УК1"}, {"pair": 1, "time": "08:30 — 10:00", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Web-технологии", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "303 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Математика", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "414 УК1"}]}, {"date": "2026-12-09", "day_name": "Среда", "date_label": "Среда, 9 декабря", "short_date": "09.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Объектно-ориентированное программирование", "type": "практика", "subgroup": 1, "teacher": "преподаватель Кириленко А.А.", "room": "312 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Элективные дисциплины по физической культуре и спорту", "type": "практика", "subgroup": null, "teacher": "преподаватель Фончукова А.С.", "room": "С/З"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Объектно-ориентированное программирование", "type": "практика", "subgroup": 2, "teacher": "преподаватель Кириленко А.А.", "room": "314 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Математическая логика и теория алгоритмов", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}]}, {"date": "2026-12-10", "day_name": "Четверг", "date_label": "Четверг, 10 декабря", "short_date": "10.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Математическая логика и теория алгоритмов", "type": "лекция", "subgroup": null, "teacher": "доцент Куанышев В.Т.", "room": "414 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Математика", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}]}, {"date": "2026-12-11", "day_name": "Пятница", "date_label": "Пятница, 11 декабря", "short_date": "11.12", "lessons": []}, {"date": "2026-12-12", "day_name": "Суббота", "date_label": "Суббота, 12 декабря", "short_date": "12.12", "lessons": [{"pair": 5, "time": "15:30 — 17:00", "subject": "Тестирование программного обеспечения", "type": "Зачёт", "subgroup": null, "teacher": "ст. преподаватель Тупицын К.М.", "room": "дист. об"}]}]}, {"id": "2026-12-14", "start_date": "2026-12-14", "end_date": "2026-12-19", "period_short": "14.12 - 19.12", "period_label": "с 14 декабря по 19 декабря", "days": [{"date": "2026-12-14", "day_name": "Понедельник", "date_label": "Понедельник, 14 декабря", "short_date": "14.12", "lessons": [{"pair": 2, "time": "10:15 — 11:45", "subject": "Web-технологии", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "306 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Математическая логика и теория алгоритмов", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Web-технологии", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "303 УК1"}]}, {"date": "2026-12-15", "day_name": "Вторник", "date_label": "Вторник, 15 декабря", "short_date": "15.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Web-технологии", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "306 УК1"}, {"pair": 1, "time": "08:30 — 10:00", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Web-технологии", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "303 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Математика", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "414 УК1"}]}, {"date": "2026-12-16", "day_name": "Среда", "date_label": "Среда, 16 декабря", "short_date": "16.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Объектно-ориентированное программирование", "type": "практика", "subgroup": 1, "teacher": "преподаватель Кириленко А.А.", "room": "314 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Элективные дисциплины по физической культуре и спорту", "type": "практика", "subgroup": null, "teacher": "преподаватель Фончукова А.С.", "room": "С/З"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Объектно-ориентированное программирование", "type": "практика", "subgroup": 2, "teacher": "преподаватель Кириленко А.А.", "room": "314 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Математическая логика и теория алгоритмов", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}]}, {"date": "2026-12-17", "day_name": "Четверг", "date_label": "Четверг, 17 декабря", "short_date": "17.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Web-технологии", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "303 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Структуры и алгоритмы обработки данных", "type": "Защита КП", "subgroup": null, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Математика", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Элективные дисциплины по физической культуре и спорту", "type": "практика", "subgroup": null, "teacher": "преподаватель Фончукова А.С.", "room": "С/З"}]}, {"date": "2026-12-18", "day_name": "Пятница", "date_label": "Пятница, 18 декабря", "short_date": "18.12", "lessons": []}, {"date": "2026-12-19", "day_name": "Суббота", "date_label": "Суббота, 19 декабря", "short_date": "19.12", "lessons": []}]}, {"id": "2026-12-21", "start_date": "2026-12-21", "end_date": "2026-12-26", "period_short": "21.12 - 26.12", "period_label": "с 21 декабря по 26 декабря", "days": [{"date": "2026-12-21", "day_name": "Понедельник", "date_label": "Понедельник, 21 декабря", "short_date": "21.12", "lessons": [{"pair": 2, "time": "10:15 — 11:45", "subject": "Web-технологии", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "303 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Математическая логика и теория алгоритмов", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Web-технологии", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "303 УК1"}]}, {"date": "2026-12-22", "day_name": "Вторник", "date_label": "Вторник, 22 декабря", "short_date": "22.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Web-технологии", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "306 УК1"}, {"pair": 1, "time": "08:30 — 10:00", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Web-технологии", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "303 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Математика", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "414 УК1"}]}, {"date": "2026-12-23", "day_name": "Среда", "date_label": "Среда, 23 декабря", "short_date": "23.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Математическая логика и теория алгоритмов", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "408 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Элективные дисциплины по физической культуре и спорту", "type": "практика", "subgroup": null, "teacher": "преподаватель Фончукова А.С.", "room": "С/З"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}]}, {"date": "2026-12-24", "day_name": "Четверг", "date_label": "Четверг, 24 декабря", "short_date": "24.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Web-технологии", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "303 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Объектно-ориентированное программирование", "type": "Зачёт", "subgroup": null, "teacher": "преподаватель Кириленко А.А.", "room": "303 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Web-технологии", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "303 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Теория информации", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}]}, {"date": "2026-12-25", "day_name": "Пятница", "date_label": "Пятница, 25 декабря", "short_date": "25.12", "lessons": []}, {"date": "2026-12-26", "day_name": "Суббота", "date_label": "Суббота, 26 декабря", "short_date": "26.12", "lessons": []}]}, {"id": "2026-12-28", "start_date": "2026-12-28", "end_date": "2026-12-30", "period_short": "28.12 - 30.12", "period_label": "с 28 декабря по 30 декабря", "days": [{"date": "2026-12-28", "day_name": "Понедельник", "date_label": "Понедельник, 28 декабря", "short_date": "28.12", "lessons": [{"pair": 3, "time": "12:00 — 13:30", "subject": "Элективные дисциплины по физической культуре и спорту", "type": "практика", "subgroup": null, "teacher": "преподаватель Фончукова А.С.", "room": "С/З"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Элективные дисциплины по физической культуре и спорту", "type": "Зачёт", "subgroup": null, "teacher": "преподаватель Фончукова А.С.", "room": "С/З"}]}, {"date": "2026-12-29", "day_name": "Вторник", "date_label": "Вторник, 29 декабря", "short_date": "29.12", "lessons": [{"pair": 1, "time": "08:30 — 10:00", "subject": "Web-технологии", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Структуры и алгоритмы обработки данных", "type": "практика", "subgroup": 1, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}, {"pair": 2, "time": "10:15 — 11:45", "subject": "Web-технологии", "type": "практика", "subgroup": 2, "teacher": "ст. преподаватель Казанцев М.Ю.", "room": "303 УК1"}, {"pair": 3, "time": "12:00 — 13:30", "subject": "Математика", "type": "практика", "subgroup": null, "teacher": "преподаватель Соломеин А.В.", "room": "414 УК1"}, {"pair": 4, "time": "14:15 — 15:45", "subject": "Теория информации", "type": "Зачёт", "subgroup": null, "teacher": "ст. преподаватель Белкина А.В.", "room": "306 УК1"}]}, {"date": "2026-12-30", "day_name": "Среда", "date_label": "Среда, 30 декабря", "short_date": "30.12", "lessons": []}]}]};
+
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    // State
+    let scheduleData = EMBEDDED_SCHEDULE;
+    let selectedWeekIdx = 0;
+    let hidePastDays = JSON.parse(localStorage.getItem('urtisi_hide_past') ?? 'true');
+    let selectedSubgroup = localStorage.getItem('urtisi_subgroup') || 'all';
+    let hapticEnabled = JSON.parse(localStorage.getItem('urtisi_haptic') ?? 'true');
+    let isDarkTheme = JSON.parse(localStorage.getItem('urtisi_dark') ?? 'true');
+
+    function triggerHaptic(type = 'light') {
+      if (!hapticEnabled) return;
+      try {
+        if (tg && tg.HapticFeedback) {
+          if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
+          else tg.HapticFeedback.impactOccurred(type);
+        } else if (navigator.vibrate) {
+          navigator.vibrate(12);
+        }
+      } catch (e) {}
+    }
+
+    function showToast(title, sub) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastTitle').textContent = title;
+      document.getElementById('toastSub').textContent = sub;
+      toast.classList.add('show');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    function getTodayISO() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function detectCurrentWeekIndex() {
+      const today = getTodayISO();
+      const weeks = scheduleData.weeks || [];
+      for (let i = 0; i < weeks.length; i++) {
+        if (today >= weeks[i].start_date && today <= weeks[i].end_date) {
+          return i;
+        }
+      }
+      // If before first week, return 0; if after last, return last
+      if (weeks.length && today < weeks[0].start_date) return 0;
+      return Math.max(0, weeks.length - 1);
+    }
+
+    function applyTheme() {
+      const html = document.documentElement;
+      if (isDarkTheme) {
+        html.classList.add('dark');
+        html.classList.remove('light');
+        if (tg && tg.setHeaderColor) tg.setHeaderColor('#0b0d10');
+      } else {
+        html.classList.add('light');
+        html.classList.remove('dark');
+        if (tg && tg.setHeaderColor) tg.setHeaderColor('#ffffff');
+      }
+      document.getElementById('themeToggle').checked = isDarkTheme;
+    }
+
+    function renderSchedule() {
+      const weeks = scheduleData.weeks || [];
+      if (!weeks.length) return;
+      const week = weeks[selectedWeekIdx] || weeks[0];
+      const currentWeekIdx = detectCurrentWeekIndex();
+      const todayISO = getTodayISO();
+
+      document.getElementById('groupLabel').textContent = `Группа ${scheduleData.group}`;
+      document.getElementById('periodLabel').textContent = `(${week.period_label})`;
+      document.getElementById('drawerPeriodShort').textContent = week.period_short;
+      document.getElementById('lastUpdatedLabel').textContent = scheduleData.updated_at || 'только что';
+
+      // Current badge in drawer
+      const currBadge = document.getElementById('currentWeekBadge');
+      currBadge.style.display = selectedWeekIdx === currentWeekIdx ? 'inline-block' : 'none';
+
+      // Prev / Next buttons state
+      document.getElementById('prevWeekBtn').disabled = selectedWeekIdx <= 0;
+      document.getElementById('nextWeekBtn').disabled = selectedWeekIdx >= weeks.length - 1;
+
+      // Hide past days toggle state
+      const hideBtn = document.getElementById('hidePastBtn');
+      hideBtn.classList.toggle('active', hidePastDays);
+
+      // Subgroup tabs
+      document.querySelectorAll('.sg-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.sg === selectedSubgroup);
+      });
+
+      // Render periods list in drawer
+      const periodsList = document.getElementById('periodsList');
+      periodsList.innerHTML = weeks.map((w, idx) => `
+        <div class="period-item ${idx === selectedWeekIdx ? 'selected' : ''}" data-widx="${idx}">
+          <span>${w.period_short}</span>
+          <span style="font-size: 11px; color: var(--text-secondary);">${idx === currentWeekIdx ? 'Текущая' : w.period_label}</span>
+        </div>
+      `).join('');
+
+      periodsList.querySelectorAll('.period-item').forEach(el => {
+        el.addEventListener('click', () => {
+          selectedWeekIdx = Number(el.dataset.widx);
+          triggerHaptic('light');
+          renderSchedule();
+          closeDrawer();
+        });
+      });
+
+      // Filter days & lessons
+      const container = document.getElementById('scheduleContainer');
+      let renderedDays = 0;
+      let htmlParts = [];
+
+      for (const day of week.days) {
+        if (hidePastDays && selectedWeekIdx === currentWeekIdx && day.date < todayISO) {
+          continue;
+        }
+        const filteredLessons = (day.lessons || []).filter(lesson => {
+          if (selectedSubgroup === 'all') return true;
+          if (!lesson.subgroup) return true;
+          return String(lesson.subgroup) === selectedSubgroup;
+        });
+
+        if (!filteredLessons.length) continue;
+        renderedDays++;
+
+        const isToday = day.date === todayISO;
+        const lessonsHTML = filteredLessons.map(l => {
+          const isExam = /зач[её]т|защита|экзамен/i.test(l.type || '');
+          const isLecture = /лекция/i.test(l.type || '');
+          const typeClass = isExam ? 'exam' : (isLecture ? 'lecture' : '');
+          const isRemote = /дист/i.test(l.room || '');
+
+          return `
+            <article class="lesson-card">
+              <div class="lesson-top">
+                <span class="pair-num">${l.pair} пара</span>
+                <span class="pair-time">${l.time}</span>
+              </div>
+              <div class="subject-name">${l.subject}</div>
+              <div class="tags-row">
+                ${l.type ? `<span class="tag-pill ${typeClass}">${l.type}</span>` : ''}
+                ${l.subgroup ? `<span class="tag-pill subgroup">${l.subgroup} п/гр</span>` : ''}
+              </div>
+              ${l.teacher ? `<div class="teacher-line">Преподаватель: <strong>${l.teacher}</strong></div>` : ''}
+              <div class="room-line">
+                <span>Кабинет:</span>
+                <span class="room-badge ${isRemote ? 'remote' : ''}">${l.room || '—'}</span>
+              </div>
+            </article>
+          `;
+        }).join('');
+
+        htmlParts.push(`
+          <section class="day-section">
+            <div class="day-header">
+              <div class="day-title">${day.date_label}</div>
+              ${isToday ? '<span class="today-badge">Сегодня</span>' : ''}
+            </div>
+            ${lessonsHTML}
+          </section>
+        `);
+      }
+
+      if (renderedDays === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <h3>На выбранный период пар нет</h3>
+            <p>Возможно, все занятия этой недели уже прошли или вы выбрали следующую неделю.</p>
+            ${hidePastDays ? '<button class="btn-secondary" id="showAllDaysBtn">Показать прошедшие дни</button>' : ''}
+          </div>
+        `;
+        const showBtn = document.getElementById('showAllDaysBtn');
+        if (showBtn) {
+          showBtn.addEventListener('click', () => {
+            hidePastDays = false;
+            localStorage.setItem('urtisi_hide_past', 'false');
+            triggerHaptic('light');
+            renderSchedule();
+          });
+        }
+      } else {
+        container.innerHTML = htmlParts.join('');
+      }
+    }
+
+    // Drawer controls
+    const drawerBackdrop = document.getElementById('drawerBackdrop');
+    const drawerPanel = document.getElementById('drawerPanel');
+
+    function openDrawer() {
+      drawerBackdrop.classList.add('open');
+      drawerPanel.classList.add('open');
+      triggerHaptic('light');
+    }
+
+    function closeDrawer() {
+      drawerBackdrop.classList.remove('open');
+      drawerPanel.classList.remove('open');
+    }
+
+    document.getElementById('openMenuBtn').addEventListener('click', openDrawer);
+    document.getElementById('closeMenuBtn').addEventListener('click', closeDrawer);
+    drawerBackdrop.addEventListener('click', closeDrawer);
+
+    // Week navigation
+    document.getElementById('prevWeekBtn').addEventListener('click', () => {
+      if (selectedWeekIdx > 0) {
+        selectedWeekIdx--;
+        triggerHaptic('light');
+        renderSchedule();
+      }
+    });
+
+    document.getElementById('nextWeekBtn').addEventListener('click', () => {
+      if (selectedWeekIdx < (scheduleData.weeks || []).length - 1) {
+        selectedWeekIdx++;
+        triggerHaptic('light');
+        renderSchedule();
+      }
+    });
+
+    document.getElementById('currWeekBtn').addEventListener('click', () => {
+      selectedWeekIdx = detectCurrentWeekIndex();
+      triggerHaptic('medium');
+      renderSchedule();
+      closeDrawer();
+    });
+
+    // Hide past days toggle
+    document.getElementById('hidePastBtn').addEventListener('click', () => {
+      hidePastDays = !hidePastDays;
+      localStorage.setItem('urtisi_hide_past', JSON.stringify(hidePastDays));
+      triggerHaptic('light');
+      renderSchedule();
+    });
+
+    // Subgroup tabs
+    document.querySelectorAll('.sg-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        selectedSubgroup = btn.dataset.sg;
+        localStorage.setItem('urtisi_subgroup', selectedSubgroup);
+        triggerHaptic('light');
+        renderSchedule();
+      });
+    });
+
+    // Accordion in drawer
+    document.getElementById('togglePeriodsBtn').addEventListener('click', () => {
+      const list = document.getElementById('periodsList');
+      const chev = document.getElementById('periodsChevron');
+      const isOpen = list.classList.toggle('open');
+      chev.textContent = isOpen ? '⌃' : '⌄';
+      triggerHaptic('light');
+    });
+
+    // Refresh schedule from schedule.json
+    async function refreshSchedule(silent = false) {
+      try {
+        const res = await fetch('./schedule.json?t=' + Date.now(), { cache: 'no-store' });
+        if (res.ok) {
+          const fresh = await res.json();
+          if (fresh && Array.isArray(fresh.weeks) && fresh.weeks.length) {
+            scheduleData = fresh;
+          }
+        }
+      } catch (e) {
+        // Fallback to embedded schedule when opened locally without HTTP server
+      }
+      renderSchedule();
+      if (!silent) {
+        triggerHaptic('success');
+        showToast('Расписание обновлено', 'Расписание успешно загружено');
+      }
+    }
+
+    document.getElementById('refreshScheduleBtn').addEventListener('click', () => refreshSchedule(false));
+
+    // Theme & Haptics switches
+    document.getElementById('themeToggle').addEventListener('change', (e) => {
+      isDarkTheme = e.target.checked;
+      localStorage.setItem('urtisi_dark', JSON.stringify(isDarkTheme));
+      applyTheme();
+      triggerHaptic('light');
+    });
+
+    document.getElementById('hapticToggle').checked = hapticEnabled;
+    document.getElementById('hapticToggle').addEventListener('change', (e) => {
+      hapticEnabled = e.target.checked;
+      localStorage.setItem('urtisi_haptic', JSON.stringify(hapticEnabled));
+      if (hapticEnabled) triggerHaptic('medium');
+    });
+
+    // Modals (Bells, Feedback, FAQ, About)
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    function openModal(title, html) {
+      modalTitle.textContent = title;
+      modalBody.innerHTML = html;
+      modalBackdrop.classList.add('open');
+      triggerHaptic('light');
+    }
+
+    function closeModal() {
+      modalBackdrop.classList.remove('open');
+    }
+
+    document.getElementById('closeModalBtn').addEventListener('click', closeModal);
+    modalBackdrop.addEventListener('click', (e) => {
+      if (e.target === modalBackdrop) closeModal();
+    });
+
+    document.getElementById('openBellsBtn').addEventListener('click', () => {
+      const wd = (scheduleData.bells?.weekdays || []).map(b =>
+        `<div class="bell-row"><strong>${b.pair} пара</strong><span>${b.time}</span></div>`
+      ).join('');
+      const sat = (scheduleData.bells?.saturday || []).map(b =>
+        `<div class="bell-row"><strong>${b.pair} пара</strong><span>${b.time}</span></div>`
+      ).join('');
+      openModal('Расписание звонков (УрТИСИ)', `
+        <div style="font-size: 12px; font-weight: 700; color: var(--accent-blue); margin-bottom: 6px;">ПОНЕДЕЛЬНИК — ПЯТНИЦА</div>
+        ${wd}
+        <div style="font-size: 12px; font-weight: 700; color: var(--accent-amber); margin: 12px 0 6px;">СУББОТА</div>
+        ${sat}
+      `);
+    });
+
+    document.querySelectorAll('.fb-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const kind = card.dataset.fb;
+        openModal(kind, `
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 0;">Опишите подробнее — сообщение будет отправлено администратору бота.</p>
+          <textarea class="fb-textarea" id="fbInput" placeholder="Введите текст сообщения..."></textarea>
+          <button class="btn-full-blue" id="sendFbBtn">Отправить</button>
+        `);
+        document.getElementById('sendFbBtn').addEventListener('click', () => {
+          const val = document.getElementById('fbInput').value.trim();
+          if (!val) return;
+          if (tg && tg.sendData) {
+            try {
+              tg.sendData(JSON.stringify({ type: kind, text: val }));
+            } catch (e) {}
+          }
+          closeModal();
+          triggerHaptic('success');
+          showToast('Сообщение отправлено', 'Спасибо за обратную связь!');
+        });
+      });
+    });
+
+    document.getElementById('faqBtn').addEventListener('click', () => {
+      openModal('FAQ и помощь', `
+        <div style="font-size: 13px; color: var(--text-secondary); display: flex; flex-direction: column; gap: 10px;">
+          <div><strong style="color: var(--text-primary);">Как выбрать свою подгруппу?</strong><br>На главном экране переключите фильтр <em>Все / 1 п/гр / 2 п/гр</em> — выбор сохранится автоматически.</div>
+          <div><strong style="color: var(--text-primary);">Как обновить расписание при заменах?</strong><br>Нажмите кнопку <em>Обновить расписание</em> в меню — приложение загрузит актуальный файл с сервера.</div>
+          <div><strong style="color: var(--text-primary);">Работает ли без интернета?</strong><br>Да, последнее загруженное расписание кэшируется локально.</div>
+        </div>
+      `);
+    });
+
+    document.getElementById('aboutBtn').addEventListener('click', () => {
+      openModal('О приложении', `
+        <p style="font-size: 13px; color: var(--text-secondary); margin: 0;">
+          <strong>Расписание УрТИСИ СибГУТИ</strong> — Telegram Mini App для группы <strong>${scheduleData.group}</strong>.<br><br>
+          Версия: 1.0.0<br>
+          Период: 23.11.2026 — 30.12.2026
+        </p>
+      `);
+    });
+
+    // Init
+    applyTheme();
+    selectedWeekIdx = detectCurrentWeekIndex();
+    renderSchedule();
+    refreshSchedule(true);
+  </script>
+</body>
+</html>
