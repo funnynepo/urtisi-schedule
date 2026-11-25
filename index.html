@@ -1717,73 +1717,108 @@
       `);
     });
 
-    // Обратная связь (баги / идеи / отзывы) — без токенов в публичном коде
-    const ADMIN_USERNAME = "funnynepo";
-    // Опционально: ссылка на Google Apps Script, если позже захотите тихую отправку через бота
-    const FEEDBACK_WEBHOOK_URL = "";
+    // Настройки бота для приёма обратной связи (отзывы / баги / идеи)
+    const FEEDBACK_BOT_TOKEN = "9256082780:AAGtSrGFXttv9FNv5PUaI5GQ8kwGOtuZsx0";
+    // Вставьте сюда ваш личный числовой ID от @userinfobot (не ID бота 9256082780)
+    const ADMIN_CHAT_ID = "";
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+    async function resolveAdminChatId() {
+      const botId = FEEDBACK_BOT_TOKEN.split(':')[0];
+      const explicitId = String(ADMIN_CHAT_ID || '').trim();
+      if (explicitId && explicitId !== botId) {
+        return explicitId;
+      }
+      const cachedId = localStorage.getItem('urtisi_admin_chat_id');
+      if (cachedId && cachedId !== botId) {
+        return cachedId;
+      }
+      // Автопоиск вашего chat_id из последнего сообщения /start этому боту
+      const updRes = await fetch(`https://api.telegram.org/bot${FEEDBACK_BOT_TOKEN}/getUpdates?limit=20`);
+      const updData = await updRes.json();
+      if (updData && updData.ok && Array.isArray(updData.result)) {
+        for (let i = updData.result.length - 1; i >= 0; i--) {
+          const msg = updData.result[i].message || updData.result[i].edited_message;
+          if (msg && msg.chat && !msg.chat.is_bot && String(msg.chat.id) !== botId) {
+            const foundId = String(msg.chat.id);
+            localStorage.setItem('urtisi_admin_chat_id', foundId);
+            return foundId;
+          }
+        }
+      }
+      return "";
+    }
 
     document.querySelectorAll('.fb-card').forEach(card => {
       card.addEventListener('click', () => {
         const kind = card.dataset.fb;
         const icon = kind.includes('баг') ? '🐞' : (kind.includes('иде') ? '💡' : '⭐');
         openModal(kind, `
-          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 0;">Опишите подробнее — откроется чат с администратором (<strong>@${ADMIN_USERNAME}</strong>) с готовым текстом для отправки.</p>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 0;">Опишите подробнее — сообщение придёт администратору в Telegram.</p>
           <textarea class="fb-textarea" id="fbInput" placeholder="Введите текст сообщения..."></textarea>
-          <button class="btn-full-blue" id="sendFbBtn">Отправить в Telegram</button>
+          <button class="btn-full-blue" id="sendFbBtn">Отправить</button>
         `);
         document.getElementById('sendFbBtn').addEventListener('click', async () => {
           const val = document.getElementById('fbInput').value.trim();
           if (!val) return;
+          const sendBtn = document.getElementById('sendFbBtn');
+          sendBtn.disabled = true;
+          sendBtn.textContent = 'Отправка...';
 
-          const currentWeek = (scheduleData.weeks || [])[selectedWeekIdx];
-          const weekLabel = currentWeek ? currentWeek.period_short : '—';
-
-          if (FEEDBACK_WEBHOOK_URL) {
-            const sendBtn = document.getElementById('sendFbBtn');
-            sendBtn.disabled = true;
-            sendBtn.textContent = 'Отправка...';
-            try {
-              const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
-              await fetch(FEEDBACK_WEBHOOK_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  type: kind,
-                  icon,
-                  group: scheduleData.group,
-                  week: weekLabel,
-                  user: tgUser,
-                  text: val
-                })
-              });
-              closeModal();
-              triggerHaptic('success');
-              showToast('Сообщение отправлено', 'Спасибо за обратную связь!');
-              return;
-            } catch (e) {
-              sendBtn.disabled = false;
-              sendBtn.textContent = 'Отправить в Telegram';
+          try {
+            const targetChatId = await resolveAdminChatId();
+            if (!targetChatId) {
+              throw new Error('NO_CHAT_ID');
             }
-          }
 
-          const formattedText = [
-            `${icon} ${kind}`,
-            `Группа: ${scheduleData.group} (${weekLabel})`,
-            ``,
-            val
-          ].join('\n');
+            const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
+            const senderName = tgUser
+              ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ')
+              : 'Гость (браузер)';
+            const senderUsername = tgUser && tgUser.username ? `@${tgUser.username}` : 'без username';
+            const senderId = tgUser && tgUser.id ? tgUser.id : '—';
+            const currentWeek = (scheduleData.weeks || [])[selectedWeekIdx];
+            const weekLabel = currentWeek ? currentWeek.period_short : '—';
 
-          const tgLink = `https://t.me/${ADMIN_USERNAME}?text=${encodeURIComponent(formattedText)}`;
+            const messageText = [
+              `${icon} <b>${escapeHtml(kind)}</b>`,
+              `📚 Группа: <b>${escapeHtml(scheduleData.group)}</b> · Неделя: <b>${escapeHtml(weekLabel)}</b>`,
+              `👤 От: ${escapeHtml(senderName)} (${escapeHtml(senderUsername)}, ID: <code>${escapeHtml(senderId)}</code>)`,
+              ``,
+              escapeHtml(val)
+            ].join('\n');
 
-          closeModal();
-          triggerHaptic('success');
-          showToast('Переходим в чат', 'Нажмите «Отправить» в диалоге с @' + ADMIN_USERNAME);
+            const resp = await fetch(`https://api.telegram.org/bot${FEEDBACK_BOT_TOKEN}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: targetChatId,
+                text: messageText,
+                parse_mode: 'HTML'
+              })
+            });
+            const data = await resp.json();
+            if (!data.ok) {
+              throw new Error(data.description || 'Telegram API error');
+            }
 
-          if (tg && tg.openTelegramLink) {
-            tg.openTelegramLink(tgLink);
-          } else {
-            window.open(tgLink, '_blank');
+            closeModal();
+            triggerHaptic('success');
+            showToast('Сообщение отправлено', 'Спасибо за обратную связь!');
+          } catch (err) {
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Отправить';
+            if (err && err.message === 'NO_CHAT_ID') {
+              showToast('Нужен ID получателя', 'Напишите /start боту обратной связи или укажите ADMIN_CHAT_ID', true);
+            } else {
+              showToast('Ошибка отправки', 'Проверьте интернет и что в боте нажата кнопка /start', true);
+            }
           }
         });
       });
