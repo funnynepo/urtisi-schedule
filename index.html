@@ -1717,108 +1717,63 @@
       `);
     });
 
-    // Настройки бота для приёма обратной связи (отзывы / баги / идеи)
-    const FEEDBACK_BOT_TOKEN = "9256082780:AAGtSrGFXttv9FNv5PUaI5GQ8kwGOtuZsx0";
-    // Вставьте сюда ваш личный числовой ID от @userinfobot (не ID бота 9256082780)
-    const ADMIN_CHAT_ID = "";
-
-    function escapeHtml(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    }
-
-    async function resolveAdminChatId() {
-      const botId = FEEDBACK_BOT_TOKEN.split(':')[0];
-      const explicitId = String(ADMIN_CHAT_ID || '').trim();
-      if (explicitId && explicitId !== botId) {
-        return explicitId;
-      }
-      const cachedId = localStorage.getItem('urtisi_admin_chat_id');
-      if (cachedId && cachedId !== botId) {
-        return cachedId;
-      }
-      // Автопоиск вашего chat_id из последнего сообщения /start этому боту
-      const updRes = await fetch(`https://api.telegram.org/bot${FEEDBACK_BOT_TOKEN}/getUpdates?limit=20`);
-      const updData = await updRes.json();
-      if (updData && updData.ok && Array.isArray(updData.result)) {
-        for (let i = updData.result.length - 1; i >= 0; i--) {
-          const msg = updData.result[i].message || updData.result[i].edited_message;
-          if (msg && msg.chat && !msg.chat.is_bot && String(msg.chat.id) !== botId) {
-            const foundId = String(msg.chat.id);
-            localStorage.setItem('urtisi_admin_chat_id', foundId);
-            return foundId;
-          }
-        }
-      }
-      return "";
-    }
+    // Обратная связь (баги / идеи / отзывы) — тихая фоновая отправка без перехода в личку и без токенов в коде
+    // Вставьте сюда URL веб-приложения Google Apps Script (вида https://script.google.com/macros/s/.../exec)
+    const FEEDBACK_WEBHOOK_URL = "";
 
     document.querySelectorAll('.fb-card').forEach(card => {
       card.addEventListener('click', () => {
         const kind = card.dataset.fb;
         const icon = kind.includes('баг') ? '🐞' : (kind.includes('иде') ? '💡' : '⭐');
         openModal(kind, `
-          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 0;">Опишите подробнее — сообщение придёт администратору в Telegram.</p>
+          <p style="font-size: 13px; color: var(--text-secondary); margin-top: 0;">Опишите подробнее — сообщение отправится напрямую администратору прямо из приложения.</p>
           <textarea class="fb-textarea" id="fbInput" placeholder="Введите текст сообщения..."></textarea>
           <button class="btn-full-blue" id="sendFbBtn">Отправить</button>
         `);
         document.getElementById('sendFbBtn').addEventListener('click', async () => {
           const val = document.getElementById('fbInput').value.trim();
           if (!val) return;
+
+          if (!FEEDBACK_WEBHOOK_URL || !FEEDBACK_WEBHOOK_URL.startsWith('http')) {
+            showToast('Отправка не настроена', 'Укажите ссылку Google Apps Script в FEEDBACK_WEBHOOK_URL', true);
+            return;
+          }
+
           const sendBtn = document.getElementById('sendFbBtn');
           sendBtn.disabled = true;
           sendBtn.textContent = 'Отправка...';
 
+          const currentWeek = (scheduleData.weeks || [])[selectedWeekIdx];
+          const weekLabel = currentWeek ? currentWeek.period_short : '—';
+          const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
+
           try {
-            const targetChatId = await resolveAdminChatId();
-            if (!targetChatId) {
-              throw new Error('NO_CHAT_ID');
-            }
-
-            const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
-            const senderName = tgUser
-              ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ')
-              : 'Гость (браузер)';
-            const senderUsername = tgUser && tgUser.username ? `@${tgUser.username}` : 'без username';
-            const senderId = tgUser && tgUser.id ? tgUser.id : '—';
-            const currentWeek = (scheduleData.weeks || [])[selectedWeekIdx];
-            const weekLabel = currentWeek ? currentWeek.period_short : '—';
-
-            const messageText = [
-              `${icon} <b>${escapeHtml(kind)}</b>`,
-              `📚 Группа: <b>${escapeHtml(scheduleData.group)}</b> · Неделя: <b>${escapeHtml(weekLabel)}</b>`,
-              `👤 От: ${escapeHtml(senderName)} (${escapeHtml(senderUsername)}, ID: <code>${escapeHtml(senderId)}</code>)`,
-              ``,
-              escapeHtml(val)
-            ].join('\n');
-
-            const resp = await fetch(`https://api.telegram.org/bot${FEEDBACK_BOT_TOKEN}/sendMessage`, {
+            await fetch(FEEDBACK_WEBHOOK_URL, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
               body: JSON.stringify({
-                chat_id: targetChatId,
-                text: messageText,
-                parse_mode: 'HTML'
+                type: kind,
+                icon,
+                group: scheduleData.group,
+                week: weekLabel,
+                user: tgUser ? {
+                  id: tgUser.id,
+                  first_name: tgUser.first_name || '',
+                  last_name: tgUser.last_name || '',
+                  username: tgUser.username || ''
+                } : null,
+                text: val
               })
             });
-            const data = await resp.json();
-            if (!data.ok) {
-              throw new Error(data.description || 'Telegram API error');
-            }
 
             closeModal();
             triggerHaptic('success');
             showToast('Сообщение отправлено', 'Спасибо за обратную связь!');
-          } catch (err) {
+          } catch (e) {
             sendBtn.disabled = false;
             sendBtn.textContent = 'Отправить';
-            if (err && err.message === 'NO_CHAT_ID') {
-              showToast('Нужен ID получателя', 'Напишите /start боту обратной связи или укажите ADMIN_CHAT_ID', true);
-            } else {
-              showToast('Ошибка отправки', 'Проверьте интернет и что в боте нажата кнопка /start', true);
-            }
+            showToast('Ошибка отправки', 'Проверьте подключение к интернету и попробуйте снова', true);
           }
         });
       });
@@ -1874,3 +1829,71 @@
   </script>
 </body>
 </html>
+Как подключить тихую отправку за 2 минутыПолучите новый токен бота в @BotFather:Откройте @BotFather → /mybots → выберите бота для обратной связи → API Token → Revoke current token (так как прежний токен был отозван после публикации на GitHub).   Скопируйте новый токен, откройте этого бота в Telegram и нажмите Старт (/start).Проверка: в чате с ботом появилось ваше сообщение /start, а в @BotFather отображается новый токен.Создайте скрипт-посредник в Google Apps Script:Перейдите на script.google.com и нажмите Новый проект.Удалите весь шаблонный код в редакторе и вставьте код ниже, указав в первой строке свой новый токен бота (и при желании свой числовой ID из @userinfobot — если оставить пустым, скрипт сам определит его по вашему /start):JavaScriptconst BOT_TOKEN = "ВСТАВЬТЕ_НОВЫЙ_ТОКЕН_БОТА";
+const ADMIN_ID = ""; // Необязательно: ваш числовой ID из @userinfobot
+
+function escapeHtml(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function resolveChatId() {
+  const botId = BOT_TOKEN.split(":")[0];
+  if (ADMIN_ID && String(ADMIN_ID).trim() !== botId) {
+    return String(ADMIN_ID).trim();
+  }
+  const props = PropertiesService.getScriptProperties();
+  const saved = props.getProperty("ADMIN_CHAT_ID");
+  if (saved && saved !== botId) return saved;
+
+  const res = UrlFetchApp.fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/getUpdates?limit=20");
+  const json = JSON.parse(res.getContentText());
+  if (json.ok && json.result) {
+    for (let i = json.result.length - 1; i >= 0; i--) {
+      const msg = json.result[i].message || json.result[i].edited_message;
+      if (msg && msg.chat && !msg.chat.is_bot && String(msg.chat.id) !== botId) {
+        const chatId = String(msg.chat.id);
+        props.setProperty("ADMIN_CHAT_ID", chatId);
+        return chatId;
+      }
+    }
+  }
+  return "";
+}
+
+function doPost(e) {
+  try {
+    const payload = JSON.parse(e.postData.contents);
+    const chatId = resolveChatId();
+    if (!chatId) return ContentService.createTextOutput("NO_CHAT_ID");
+
+    const u = payload.user;
+    const senderName = u ? [u.first_name, u.last_name].filter(Boolean).join(" ") : "Гость (браузер)";
+    const senderTag = u && u.username ? "@" + u.username : "без username";
+    const senderId = u && u.id ? u.id : "—";
+
+    const text = [
+      `${payload.icon || "📩"} <b>${escapeHtml(payload.type)}</b>`,
+      `📚 Группа: <b>${escapeHtml(payload.group)}</b> · Неделя: <b>${escapeHtml(payload.week)}</b>`,
+      `👤 От: ${escapeHtml(senderName)} (${escapeHtml(senderTag)}, ID: <code>${escapeHtml(senderId)}</code>)`,
+      ``,
+      escapeHtml(payload.text)
+    ].join("\n");
+
+    UrlFetchApp.fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify({
+        chat_id: chatId,
+        text: text,
+        parse_mode: "HTML"
+      })
+    });
+
+    return ContentService.createTextOutput("OK");
+  } catch (err) {
+    return ContentService.createTextOutput("ERR: " + err);
+  }
+}
